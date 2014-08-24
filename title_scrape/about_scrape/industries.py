@@ -74,20 +74,6 @@ def jobs_fromlist(link_list, industry = 0, link = 1):
     return jobs_df
 
 
-'''
-industries_page = 'http://jobsearch.about.com/od/job-titles/fl/job-titles-a-z.htm'
-industries = get_industry_links(industries_page)
-print 'industries downloaded'
-
-jobs = jobs_fromlist(industries)
-
-print "head of queries df"
-print  jobs.head(10)
-print "tail of queries df"
-print jobs.tail(10)
-jobs.to_csv('jobs.csv', encoding='utf-8')
-'''
-
 
 
 
