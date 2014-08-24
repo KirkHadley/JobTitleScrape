@@ -1,9 +1,7 @@
 import pandas as pd
-import numpy as np
 from bs4 import BeautifulSoup
-import html5lib, lxml
 import urllib2
-import pickle
+
 
 def correctdiv_fromurl(url):
     content = urllib2.urlopen(url).read()
@@ -89,7 +87,7 @@ print "tail of queries df"
 print jobs.tail(10)
 jobs.to_csv('jobs.csv', encoding='utf-8')
 '''
-#pickle.dump( jobs,  open( "jobs_list.p", "wb" ) )
+
 
 
 
