@@ -47,7 +47,7 @@ def reduce_info(results_list, industry_df):
         print 'finished: ', i, 'terms'    
     return l
 
-def wrapper(ind_df):
+def scrape_indeed(ind_df):
     job_urls = url_creation(ind_df)
     res = get_all(job_urls)
     res = reduce_info(res, ind_df)
@@ -56,7 +56,6 @@ def wrapper(ind_df):
     if len(res['country'].unique()) < 2:
         del res['country']
     return res
-
 #job_df = pd.read_csv( '../about_scrape/jobs.csv', index_col = 0, header = 0, names = ['industry', 'term']) 
 #df = wrapper(job_df)
 #df.to_csv('big_job_list.csv')
