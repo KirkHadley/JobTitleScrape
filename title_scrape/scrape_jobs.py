@@ -22,7 +22,10 @@ df = scrape_indeed(jobs)
 df.to_csv('big_job_list.csv')
 
 #list of rules for cleaning jobs titles. see matching/matching.py
-rules_list = [[' III', ' Sr.'], [' II', ''], [' I', ' Jr.'], ['Senior', 'Sr'], ['Junior', 'Jr'], [' 3', ' Sr.'], [' 2', ''], [' 1', ' Jr.']]
+rules_list = [[' III', ' Sr.'], [' II', ''], [' I ', ' Jr.'], ['Senior', 'Sr'], 
+    ['Junior', 'Jr'], [' 3', ' Sr.'], [' 2', ''], 
+    [' 1', ' Jr.'], 
+    ['Acct', 'Accounting'], ['Mgr','Manager']]
 #clean job titles, find similarities
 # warning: takes several hours d/t huge number of jobs (~100k)
 df = matcher(df, threshold, rules_list)

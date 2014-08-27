@@ -5,42 +5,73 @@ from copy import deepcopy
 import multiprocessing as mp
 from time import time
 from datetime import datetime as dt
-jobsdf = pd.read_csv('../indeed_scrape/all_jobs.csv')
-del jobsdf[jobsdf.columns[0]]
-jobsdf.columns = ['industry', 'title', 'search_term', 'city', 'state', 'country', 'pretty_location', 'short_desc', 'start']
-del jobsdf['country']
-#jobsdf1 = jobsdf2
-#space before numerals is intentional
+import regex
 
+    
+default_cores = mp.cpu_count() - 2
 
-def clean_titles(jobsdf, rules):
-    ''' 
-function to replace weird strings/chars in job titles. takes a dataframe of jobs- preferably the one created by the indeed_scrape script as well as a list of rules. list of rules must be list of 2-item lists where first item is character(s) to be replaced and second item is the character(s) used in the replacement.  
+def paren_ToUpper(match):
+    return '(' + match.group(1).upper() + ')'
 
+def forward(x, s):
+    a = re.search(x, s)
+    if a:
+        if s[a.start():a.end()] == s[0:a.start()]:
+            print 'string already at front'
+            return s
+        else:
+            try:
+                new_string = s[a.start():a.end()] + s[0:a.start()] + s[a.end():] 
+                return new_string
+            except IndexError:
+                new_string = s[a.start():a.end()] + s[0:a.start()]
+                return new_string            
+
+def clean_titles(jobsdf, rules, special_char= ['/', '-', ','], forward_words = None):
+    jobsdf['title'] = jobsdf['title'].replace(r'Director\s-', 'Director,', regex=True)
+    jobsdf['title'] = jobsdf['title'].replace('Director Of', 'Director,')
+    jobsdf['title'] = jobsdf['title'].replace('CLERK - A/P', 'CLERK  A/P')
+    for r in range(len(rules)):
+        if re.search(r'(?<!I)I(?!I)', rules[r][0]):
+            jobsdf['title'] = jobsdf['title'].apply(lambda x: re.sub(r'(?<!\w)I(?![A-Za-z])', 'Jr.', x))
+        else:       
+            regex = re.compile(rules[r][0], re.I) 
+            jobsdf['title'] = jobsdf['title'].apply(lambda x: regex.sub(rules[r][1],  x))
+    for i in range(len(special_char)):
+        if special_char[i] == "\\":    
+            jobsdf['title'] = jobsdf['title'].apply(lambda x: re.split(r'(?<!A)\\(?!P)', x)[0])
+        elif special_char[i] == "/":
+            jobsdf['title'] = jobsdf['title'].apply(lambda x: re.split(r'(?<!A)/(?!P)', x)[0])
+        elif special_char[i] == '-':
+            jobsdf['title'] = jobsdf['title'].apply(lambda x: x.split('-')[0])      
+        else:
+            jobsdf['title'] = jobsdf['title'].apply(lambda x: x.split(special_char[i])[0]) 
+    jobsdf['title'] = jobsdf['title'].apply(lambda x: re.sub(r'\s,', '', x))
+    jobsdf['title'] = jobsdf['title'].apply(lambda x: x.strip()) 
+    if forward_words:
+        for f in range(len(forward_words)):
+            jobsdf['title'] = jobsdf['title'].apply(lambda x: forward(x, forward_words[f])) 
+    jobsdf['title'] = jobsdf['title'].apply(lambda x: " ".join(w.capitalize() for w in x.split()))
+    jobsdf['title'] = jobsdf['title'].apply(lambda x: re.sub(r'\(([^\s]?)\)', paren_ToUpper, x))
+    jobsdf['title'] = jobsdf['title'].replace("A/p", "A/P", regex=True)
+    jobsdf['title'] = jobsdf['title'].replace(r'(?<!Jr|Sr)\.', '', regex=True)  
+    return jobsdf 
+    
+def prepare_frame(jobsdf):
     '''
-    for i in range(len(jobsdf['title'])):
-        if i == 0 or i  % 1000 == 0:
-            print 'cleaned ', i, ' titles'
-        for x in range(len(rules)):
-            jobsdf['title'].ix[i] = jobsdf['title'].ix[i].replace(x[0], x[1])
-    return jobsdf
-
-def clean_frame(jobsdf, rules=None):
-    '''
-    get counts, remove duplicates, recalibrate axis. counts column + freq from check_all will equal total number of occurences for a particular title. accepts same arguments as clean_titles
+    get counts, remove duplicates, recalibrate axis. counts column + freq from check_all will equal total number of occurences for a particular title. only argument is the jobs data frame created with the indeed scaper
+    the purpose of this function is not to return a perfectly cleaned data frame, but instead to weed out obvious errors & redudancies in order to speed the following processes
     '''
     jobsdf['counts']  = jobsdf.groupby(['title'])['industry'].transform('count')    
     jobsdf.drop_duplicates('title', inplace=True)
     jobsdf.index = range(len(jobsdf))
-    if rules:
-        jobsdf = clean_titles(jobsdf, rules)
     return jobsdf
 
-def check_term(pos, x, thresh,  verbose = False):
+
+def check_term(pos, df, thresh,  verbose = False):
     ''' 
     function to find highly similar matches to a single job title. uses token_set_ratio from the fuzzywuzzy package to tokenize and regularize strings before computing their edit distance. the thresh argument (int) is the threshold for determing similarity between two terms. returns a dict w/ the keys ['title', 'freq', 'similar_terms'].
     '''
-    df = x
     test_dict = dict()
     similar_terms = [ ]
     for i in range(pos, len(df['title'])):            
@@ -61,12 +92,14 @@ def check_term(pos, x, thresh,  verbose = False):
         test_dict['freq'] = df['counts'].ix[pos] + len(similar_terms)
         test_dict['city'] = df['city'].ix[pos]
         test_dict['state'] = df['state'].ix[pos]
+        test_dict['industry'] = df['industry'].ix[pos]
     else:
         test_dict['title'] = df['title'].ix[pos]
         test_dict['similar_titles'] = 'No Similar Titles'
         test_dict['freq'] = df['counts'].ix[pos]
         test_dict['city'] = df['city'].ix[pos]
         test_dict['state'] = df['state'].ix[pos]
+        test_dict['industry'] = df['industry'].ix[pos]
     ts = time()
     st = dt.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
     print 'finished',  df['title'].ix[pos], pos, st
@@ -84,21 +117,20 @@ def check_all(thresh, dataframe):
         num = num + 1
         print num
     return l
-def check_all_parallel(jobsdf, thresh, cores=None):
+
+
+def check_all_parallel(jobsdf, thresh, cores=default_cores):
     ''' 
     this is the version of check_all actually being used
     supply same arguments as first check_all, as well as the number of cores you'd like to use
     if cores is not specified, the function will use all but two of your machine's cores
     '''
-    if cores:
-        processes = cores
-    else:
-        processes = mp.cpu_count() - 2
-    pool = mp.Pool(processes = processes)
-    results = [pool.apply_async(check_term, args = (pos, jobsdf, thresh) for pos in range(len(jobsdf))] 
+    pool = mp.Pool(processes = cores) 
+    results = [pool.apply_async(check_term, args = (pos, jobsdf, thresh)) for pos in range(len(jobsdf))] 
     results = [p.get() for p in results]
     return results
  
+
 def create_df(jobframe):
     '''
     creates a dataframe from the list returned by check_all
@@ -117,8 +149,10 @@ def create_df(jobframe):
             city = jobframe[i]['city']
             state = jobframe[i]['state']
             try:
+                industry = jobframe[i]['industry']
+            except KeyError:
                 industry = jobframe[i]['similar_titles'][0][2]
-            except:
+            except IndexError:
                 industry = 'Miscellaneous, Unknown, or Multiple Industries'
             l.append([similar, industry, title, freq, city, state])
         else:
@@ -132,11 +166,12 @@ def create_df(jobframe):
             pass
     return df
 
-def matcher(jobsdf, thresh, rules=None, cores=None):
+
+def matcher(jobsdf, thresh, rules, special_chars = ['/', '-', ','], cores = default_cores):
     ''' 
     convenience function wrapping clean_frame, check_all, and create_df. returns a dataframe
     '''
-    jobs = clean_frame(jobsdf, rules)
+    jobs = clean_frameParallel(jobsdf, rules, special_chars, cores)
     jobs = check_all_parallel(jobs, thresh, cores)
     jobs = create_df(jobs)
     return jobs
