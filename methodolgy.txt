@@ -7,7 +7,8 @@ http://jobsearch.about.com/od/job-titles/fl/job-titles-a-z.htm
 3) Use each title as a search query from Indeed
 4) Clean and match titles
 5) Deliver .csv file as the final product with the following fields: industry, search term, search term frequency, 
-job title, frequency of exact job title, number of similar titles, similar titles, and total frequency (frequency of exact title plus number ofsimilar titles).
+job title, frequency of exact job title, number of similar titles, similar titles, and total frequency 
+(frequency of exact title plus number ofsimilar titles).
 
 German (if requested)
 1) Start with categories/industries/functions found here: 
