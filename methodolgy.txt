@@ -11,8 +11,7 @@ job title, frequency of exact job title, number of similar titles, similar title
 (frequency of exact title plus number ofsimilar titles).
 
 German (if requested)
-1) Start with categories/industries/functions found here: 
-http://berufenet.arbeitsagentur.de/berufe/themeSearch.do;jsessionid=IyUzilKHvZ5SCoVlUgJELzhZuvxUi74nJpdydaXJBkEq1wH2IusE!-1246927668
+1) Start with categories/industries/functions found here: http://berufenet.arbeitsagentur.de/berufe/themeSearch.do
 2) Follow each link to list of subcategories, then to list of jobs within subcategory
 3) CSV of jobs within category, subcategory
 4) Repeat steps 3-5 from english list
