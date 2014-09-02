@@ -1,0 +1,42 @@
+General:
+English
+1) Get industries/functions/job categories from this url: http://jobsearch.about.com/od/job-titles/fl/job-titles-a-z.htm
+2) Follow each link to get job titles
+3) Use each title as a search query from Indeed
+4) Clean and match titles
+5) Deliver .csv file as the final product with the following fields: industry, search term, search term frequency, job title, frequency of exact job title, number of similar titles, similar titles, and total frequency (frequency of exact title plus number ofsimilar titles).
+
+German
+1) Start with categories/industries/functions found here: http://berufenet.arbeitsagentur.de/berufe/themeSearch.do;jsessionid=IyUzilKHvZ5SCoVlUgJELzhZuvxUi74nJpdydaXJBkEq1wH2IusE!-1246927668
+2) Follow each link to list of subcategories, then to list of jobs within subcategory
+3) CSV of jobs within category, subcategory
+4) Repeat steps 3-5 from english list
+***Due to lack of German proficiency, job titles may not be as clean and/or well matched
+
+
+Cleaning Specifics:
+1) Data begins in a pandas dataframe (i.e. a table or named array) with the following rows: industry, search term, search term frequency, job title, short description, and unique id 
+2) Cleaning step one copies the original dataframe (this copy will be used throughout the cleaning process), and applies the following transformations: remove stop words (i.e. prepositions, articles, etc.), remove non-alphanumeric characters, remove extra white spice, convert all letters to lowercase.
+3) After the cleaning process is completed, a column is added to both the copy of the dataframe and the original showing the cleaned job title. 
+4) Using the newly cleaned titles, duplicate job titles are matched. Two new columns, "total frequency" and "duplicate frequency" are added to the copy. The first of these columns reflects the total number of matches for a given job title. The latter shows the job title's frequency after the first cleaning step. At this step, the two columns are identical but will change in the following steps.  
+5) Duplicates are removed from the dataframe copy, but not from the original dataframe. A new column, "Step 1 Matches" is added to the original dataframe. If a given job title was matched (and deleted from the copy) in the first cleaning step, the job to which it was matched is listed here. A second column, "Step 1 Match ID" is also added to the dataframe, which obviously refers to the ID of the value in "Step 1 Matches"
+6) Having completed the first cleaning step, the next cleaning process is applied to the results from the first step. In this step, jr/sr are normalized, job level words (i.e. VP, Director, Manager, Junior, Senior, President, Entry Level, Lead, Supervisor, Chief, Executive, Head) are moved to the beginning of the job title. Similar to cleaning step one, a new column is added to both dataframes showing the results of the second cleaning step. ***This step is not applied to th German results***
+7) The exact match process from the first step is repeated with the results of the second step.
+8) The token set method from Python's Fuzzy Wuzzy package (details here: http://chairnerd.seatgeek.com/fuzzywuzzy-fuzzy-string-matching-in-python/) is successively applied to each of the job titles. Using a 90% match-threshold ratio, probable matches are identified, and are placed into a temporary data structure.
+9) A logistic regression classifier is trained using attributes derived from the descriptions of the job titles matched in cleaning steps 1 and 2. This classifier applied to each group of possible matches developed in the previous step, and highly probable matchers are identified. 
+10) Highly probable matches are treated similarly as matched titles in the first two cleaning steps. Matches are removed from the copied dataframe, information on their match is added to the original dataframe, total frequency increases by the number of matches, and both the name and unique ID of the matched title are added to the original frame. The only caveat is that a column titled "similar titles" is also added to the copied dataframe.
+11) Titles that were not classified as matches in step 9 are added to a temporary data structure, and will be processed shortly.
+12) While the preceeding steps were applied to one search's results at a time (i.e. the matching process was applied to the results from the search "Accounting Clerk" rather than to all results from the "Accounting" industry or to the entire population of job titles in all industries), the process now proceeds to consider an entire industry's results at once. 
+13) A Support Vector Machine is trained using the job descriptions from all of the matched titles (i.e. they are not trained on the titles mentioned in 11; those that have not yet been classified as matches). The model is applied to all unmatched titles, and they are categorized appropriately.
+14) Job titles that are identified by the SVM as highly similar undergo the same process as described in 10. Job titles that were not matched are considered to be rare and/or outliers and are discarded. 
+15) Job titles with frequency values below 10 are removed.
+16) The raw titles of the remaining jobs in the copied dataframe, which until now have not been altered from their original state, are transformed using similar cleaning methods as described above. The titles are stripped of whitespace, non-alphanumeric characters are removed, Jr/Sr/I/II/III are standardized, and capitalization is changed (Title Style). 
+17) The final data set as described previously is now complete.
+
+Deliverables:
+
+1) Raw data
+2) Table with all search terms and their respective frequencies
+3) The previously described clean data set
+
+
