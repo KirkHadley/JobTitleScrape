@@ -41,7 +41,11 @@ in the first cleaning step, the job to which it was matched is listed here. A se
 also added to the dataframe, which obviously refers to the ID of the value in "Step 1 Matches"
 
 6) Having completed the first cleaning step, the next cleaning process is applied to the results from the first step.
-In this step, jr/sr are normalized, job level words (i.e. VP, Director, Manager, Junior, Senior, President, Entry Level, Lead, Supervisor, Chief, Executive, Head) are moved to the beginning of the job title. Similar to cleaning step one, a new column is added to both dataframes showing the results of the second cleaning step. ***This step is not applied to th German results***
+In this step, jr/sr are normalized, job level words (i.e. VP, Director, Manager, Junior, Senior, President, 
+Entry Level, Lead, Supervisor, Chief, Executive, Head) are moved to the beginning of the job title. 
+Similar to cleaning step one, a new column is added to both dataframes showing the results of the second 
+cleaning step. 
+***This step is not applied to th German results***
 
 7) The exact match process from the first step is repeated with the results of the second step.
 
